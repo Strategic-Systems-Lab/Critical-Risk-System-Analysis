@@ -25,3 +25,52 @@ const pts=[{year:0,debt:Math.round(debt),savings:Math.round(sav),net:Math.round(
 for(let i=1;i<=years;i++){sav=sav*(1+rate)+toSavings*12;debt=Math.max(0,debt-toDebt*12);pts.push({year:i,debt:Math.round(debt),savings:Math.round(sav),net:Math.round(sav-debt)});} 
 return{startDebt:Math.round(p.debt),startSavings:Math.round(p.savings),startNet:Math.round(p.savings-p.debt),finalDebt:Math.round(debt),finalSavings:Math.round(sav),finalNet:Math.round(sav-debt),pts,rate};
 }
+
+// Simple React App component to satisfy the default export and allow Vite/Vercel to build.
+function App(){
+  const [years,setYears]=useState(10);
+  const [stability,setStability]=useState(65);
+
+  // Sample parameters used for quick preview builds
+  const sampleP = {
+    rent_income: 1200,
+    mortgage: 50000,
+    monthly_costs: 800,
+    capital: 25000,
+    monthly_savings: 600,
+    pension_assets: 15000,
+    monthly_contribution: 300,
+    debt: 7000,
+    discipline: 4,
+    savings: 12000
+  };
+
+  const wealth = projectWealth("8", sampleP, years, stability);
+  const net = projectNetWorth(sampleP, years, stability);
+
+  return (
+    <div style={{fontFamily:'Arial, sans-serif',padding:24}}>
+      <h1>RiskAI — Critical Risk System Analysis</h1>
+      <p>Kurzübersicht der Simulation (Beispieldaten)</p>
+      <div style={{display:'flex',gap:24}}>
+        <div style={{flex:1}}>
+          <h2>Wealth Projection (Klasse 8)</h2>
+          <p>Startvermögen: {wealth?.start ?? '—'}</p>
+          <p>Endvermögen nach {years} Jahren: {wealth?.final ?? '—'}</p>
+          <p>Wachstumsrate: {(wealth?.rate*100).toFixed(2)}%</p>
+        </div>
+        <div style={{flex:1}}>
+          <h2>Net Worth Projection</h2>
+          <p>Start Netto: {net.startNet}</p>
+          <p>End Netto nach {years} Jahren: {net.finalNet}</p>
+          <p>Netto-Wachstumsrate: {(net.rate*100).toFixed(2)}%</p>
+        </div>
+      </div>
+      <footer style={{marginTop:24,opacity:0.8,fontSize:13}}>
+        <p>Hinweis: Dies ist eine einfache Vorschau-Komponente nur zum Bauen/Deployen. Ersetze sie durch deine Simulationsoberfläche.</p>
+      </footer>
+    </div>
+  );
+}
+
+export default App;
