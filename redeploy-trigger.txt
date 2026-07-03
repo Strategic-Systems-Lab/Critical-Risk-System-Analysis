@@ -1,0 +1,3 @@
+Redeploy trigger file.
+Timestamp: 2026-07-03T17:40:00Z
+Purpose: Trigger a new Vercel deploy by creating a small commit.
