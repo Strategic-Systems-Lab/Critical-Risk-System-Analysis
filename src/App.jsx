@@ -1,4 +1,5 @@
 import{useState,useEffect,useRef}from"react";
+import{Analytics}from"@vercel/analytics/react";
 
 function cl(v,lo=1,hi=100){return Math.min(hi,Math.max(lo,Math.round(v)));}
 function risk(bad,good,y,s=1,ceil=88,fl=8){return cl(Math.max(fl,(38+(bad-good)/10*55*s)*(1+(y-1)*.01)),fl,ceil);}
@@ -69,6 +70,7 @@ function App(){
       <footer style={{marginTop:24,opacity:0.8,fontSize:13}}>
         <p>Hinweis: Dies ist eine einfache Vorschau-Komponente nur zum Bauen/Deployen. Ersetze sie durch deine Simulationsoberfläche.</p>
       </footer>
+      <Analytics />
     </div>
   );
 }
