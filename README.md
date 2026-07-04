@@ -1,238 +1,186 @@
-# 🌍 Strategic System Analysis Engine
+# RiskAI — Critical Risk System Analysis
 
-**Open Source Simulation for Systemic Risk, Stability & Complex Systems**
+**Interactive risk simulation and analysis platform for complex systems**
 
 ---
 
 ## 🚀 Overview
 
-The **Strategic System Analysis Engine** is an open-source simulation framework designed to analyze, model, and understand complex systems.
-
-It focuses on identifying **systemic risks, structural weaknesses, and long-term stability dynamics** across organizations and evolving environments.
-
-The project started as a Python-based prototype and is evolving into a **modular, scalable simulation platform**.
+**RiskAI** is a modern, web-based risk analysis platform built with React and Vite. It enables users to simulate and analyze systemic risks across diverse scenarios—from corporate environments to personal financial planning—through interactive, real-time risk modeling and AI-driven strategic analysis.
 
 ---
 
-## 🧠 Core Idea
+## 🛠️ Tech Stack
 
-Modern systems are:
-
-* highly interconnected
-* dynamically evolving
-* prone to hidden risks
-
-This engine is designed to answer:
-
-* Where are the structural risks?
-* How stable is a system over time?
-* What factors drive failure or resilience?
+- **Frontend Framework:** React 18.2.0
+- **Build Tool:** Vite 4.4.0
+- **Runtime:** Node.js 24.x
+- **Deployment:** Vercel (SPA-optimized)
+- **Styling:** Inline CSS-in-JS
+- **Visualization:** SVG-based dynamic charts
 
 ---
 
-## ⚙️ Current Features
+## ✨ Features
 
-* Multi-parameter simulation engine
-* Dynamic system evolution
-* Risk modeling across multiple domains
-* Stability scoring system
-* AI-style strategic analysis output
-* Configurable organizational parameters
+### Core Capabilities
+- **Multi-scenario Risk Simulation** – Analyze risk profiles across 6 domains:
+  - Company (organizational risk)
+  - Healthcare (health-related risks)
+  - Real Estate (property/investment risk)
+  - Stocks/ETF (market/investment risk)
+  - Lifestyle (personal lifestyle risks)
+  - Retirement (long-term financial security)
+
+- **Real-time Risk Calculation** – Dynamic computation of stability scores and risk factors
+- **Trait-based Customization** – Select up to 3 traits per simulation to refine risk modeling
+- **Interactive Visualization** – Color-coded risk charts with live updates
+- **Stability Evolution** – Track system stability over multi-year projections
+- **AI-powered Risk Reports** – Generate strategic analysis summaries for each simulation
+- **Simulation History** – Store and review up to 100 previous simulations
+- **Freemium Model** – Free tier with daily usage limits; Pro tier for unlimited access
+
+### Risk Dimensions Evaluated
+- Burnout & workforce stress
+- Financial instability
+- Cybersecurity threats
+- Automation & AI risk
+- Knowledge degradation
+- Dependency structures
+- Market dynamics
+- Operational risk
+- Governance & ethics
+- Reputation impact
 
 ---
 
-## 📊 Risk Dimensions
-
-The system currently evaluates:
-
-* Burnout & workforce stress
-* Financial instability
-* Cybersecurity threats
-* Automation & AI risk
-* Knowledge degradation
-* Dependency structures
-* Market dynamics
-* Operational risk
-* Governance & ethics
-* Reputation impact
-
----
-
-## 🧪 Example Output
+## 📂 Project Structure
 
 ```
-System Stability: 70%
-Dominant Risk: Governance
-
---- Strategic Analysis ---
-
-• Governance imbalance detected  
-• Financial system stable  
-• Rising dependency risks  
-
-→ Recommendation:
-Increase transparency and reduce structural dependencies
+.
+├── src/
+│   ├── App.jsx              # Main React component (simulation engine & UI)
+│   └── main.jsx             # React entry point
+├── index.html               # HTML template (SPA root)
+├── vite.config.js           # Vite build configuration
+├── vercel.json              # Vercel deployment config (SPA rewrite)
+├── package.json             # Dependencies & scripts
+├── LICENSE                  # GPL-3.0 license
+└── README.md                # This file
 ```
 
 ---
 
-## ▶️ Getting Started
+## 🏃 Getting Started
 
-### Requirements
+### Prerequisites
+- Node.js 24.x or higher
+- npm or yarn
 
-* Python 3.x
-
-### Run
+### Installation
 
 ```bash
-python main.py
+# Clone the repository
+git clone https://github.com/Strategic-Systems-Lab/Critical-Risk-System-Analysis.git
+cd Critical-Risk-System-Analysis
+
+# Install dependencies
+npm install
+```
+
+### Local Development
+
+```bash
+npm run dev
+```
+
+The application will start at `http://localhost:5173` (Vite default).
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+Output is generated in the `dist/` directory.
+
+### Preview Production Build Locally
+
+```bash
+npm run preview
 ```
 
 ---
 
-## 🏗️ Project Structure (Target Architecture)
+## 🚀 Deployment
 
-```
-project/
-│
-├── main.py
-├── simulation/
-│   ├── engine.py
-│   ├── system_model.py
-│
-├── analysis/
-│   └── strategy.py
-│
-├── data/
-│   └── presets.json
-│
-├── docs/
-│   └── architecture.md
-│
-├── README.md
-├── LICENSE
-└── CONTRIBUTING.md
+### Vercel Integration
+
+The project is configured for seamless Vercel deployment:
+
+1. **Framework:** Vite
+2. **Build Command:** `npm install && npm run build`
+3. **Output Directory:** `dist`
+4. **SPA Rewrite:** All routes rewrite to `index.html` (configured in `vercel.json`)
+
+**Deploy:**
+```bash
+vercel deploy
 ```
 
----
-
-## 🧭 Roadmap
-
-### 🔹 Version 4.0
-
-* Modular simulation architecture
-* Improved risk algorithms
-* Event-driven system dynamics
+Or connect your GitHub repository to Vercel for automatic deployments on push.
 
 ---
 
-### 🔹 Version 5.0
+## 📋 Available Scripts
 
-* Monte Carlo simulation
-* Risk probability modeling
-* Advanced analysis engine
-
----
-
-### 🔹 Version 6.0
-
-* Data visualization (charts, dashboards)
-* Scenario comparison system
-* Enhanced system modeling
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start local development server (hot reload) |
+| `npm run build` | Build for production (minified, optimized) |
+| `npm run preview` | Preview production build locally |
 
 ---
 
-### 🔹 Version 7.0
+## 📄 License
 
-* Web-based interface (frontend + backend)
-* Interactive simulation controls
-* User-defined system configurations
+This project is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
 
----
+### Key Points
+- Modifications and derivatives must remain open-source
+- Any distribution or deployment requires GPL compliance
+- For commercial licensing inquiries, please contact the repository maintainers
 
-### 🔹 Version 8.0
-
-* Multi-system simulation (companies, institutions)
-* Cross-system interaction modeling
-* Advanced dependency mapping
-
----
-
-### 🔹 Version 9.0
-
-* AI-driven strategy engine
-* Predictive scenario generation
-* Autonomous risk detection
-
----
-
-### 🔹 Version 10.0
-
-* Full-scale **Strategic Simulation Platform**
-* Real-world data integration
-* Global system modeling (economies, civilizations)
-* Decision-support system for complex environments
+See `LICENSE` file for full details.
 
 ---
 
 ## 🤝 Contributing
 
-We are actively looking for contributors interested in:
+We welcome contributions! Areas of interest:
 
-* Simulation systems
-* Risk modeling
-* System dynamics
-* AI analysis
-* Software architecture
-* Visualization & UI
+- Risk modeling algorithms
+- Simulation accuracy & validation
+- UI/UX improvements
+- Performance optimization
+- Chart visualizations
+- Documentation
 
-### How to contribute
-
+**How to contribute:**
 1. Fork the repository
-2. Create a new branch
-3. Make your changes
-4. Submit a Pull Request
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m 'Add your feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Open a Pull Request
 
 ---
 
-## ⚖️ License
+## 🔗 Links
 
-This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
-
-### Important
-
-* Any use (including internal or server-side) requires compliance with AGPL
-* Modified versions must remain open source
-* Commercial use must follow license terms
+- **Live Application:** https://critical-risk-system-analysis-l7cd-git-vercel-ins-3aca1c-riskai.vercel.app/
+- **Repository:** https://github.com/Strategic-Systems-Lab/Critical-Risk-System-Analysis
+- **License:** GPL-3.0
 
 ---
 
-## 🧠 Philosophy
-
-> Understanding complexity is the foundation of better decisions.
-
-This project aims to build a tool for:
-
-* systemic thinking
-* strategic foresight
-* structured risk analysis
-
----
-
-## 🌐 Long-Term Vision
-
-→ Build a **global strategic simulation platform**
-→ Enable analysis of **complex interconnected systems**
-→ Support decision-making in uncertain environments
-
----
-
-## 📬 Collaboration
-
-* Open Issues
-* Submit Pull Requests
-* Share ideas
-
----
-
-**Build systems. Analyze risk. Understand complexity. Shape the future.**
+**Understanding complexity. Analyzing risk. Enabling better decisions.**
