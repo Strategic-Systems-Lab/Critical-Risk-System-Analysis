@@ -1,77 +1,77 @@
 # RiskAI — Critical Risk System Analysis
 
-**Interactive risk simulation and analysis platform for complex systems**
+Strategic risk simulation and analysis platform for organizations, investments, and personal finance.
 
 ---
 
-## 🚀 Overview
+## Overview
 
-**RiskAI** is a modern, web-based risk analysis platform built with React and Vite. It enables users to simulate and analyze systemic risks across diverse scenarios—from corporate environments to personal financial planning—through interactive, real-time risk modeling and AI-driven strategic analysis.
+**RiskAI** is a React-based web application that enables users to simulate and analyze systemic risks across six distinct domains: companies, healthcare systems, real estate portfolios, stock/ETF investments, personal lifestyle finances, and retirement planning. Users input domain-specific parameters, run simulations over configurable time horizons, and receive risk assessments with strategic analysis.
 
 ---
 
-## 🛠️ Tech Stack
+## Features
 
-- **Frontend Framework:** React 18.2.0
+### Simulation System
+- **Six risk domains:** Company, Healthcare, Real Estate, Stocks/ETF, Lifestyle, Retirement
+- **Real-time risk calculation** with multi-factor analysis per domain
+- **Stability scoring** and year-by-year evolution tracking
+- **Wealth/Net-worth projections** for applicable domains (Real Estate, Stocks, Retirement, Lifestyle)
+
+### Customization & Input
+- **Parameter-driven simulation** – up to 17 adjustable parameters per domain
+- **Preset profiles** for quick scenario setup
+- **Leadership style selection** (Company domain only: aggressive, cooperative, authoritarian, visionary, stable)
+- **Trait selection** (Lifestyle domain only: up to 3 traits from available options)
+- **Time-horizon control** (1–60 years, domain-dependent)
+
+### Visualization & Analysis
+- **Donut chart visualization** – Risk distribution across factors with color-coded severity (green=stable, yellow/orange=elevated, red=critical)
+- **Sparkline charts** – Stability evolution over simulation period
+- **Risk overview table** – Sorted risk factors with percentage scores
+- **AI-generated strategic reports** – Rule-based analysis engine providing situation assessment, priority actions, and risk chain analysis
+
+### User Management
+- **Free plan:** Access to 4 domains (Company, Real Estate, Stocks/ETF, Lifestyle) with daily limit of 3 simulations
+- **Pro plan:** Access to all 6 domains with unlimited simulations
+- **Pricing page** with plan comparison and payment integration placeholder (Stripe)
+
+### Additional
+- **Simulation history** – Store and review up to 100 past simulations
+- **Entity naming** – Assign custom names to simulations
+- **Dark theme UI** – Optimized for mobile and desktop viewing
+
+---
+
+## Tech Stack
+
+- **Frontend:** React 18.2.0
 - **Build Tool:** Vite 4.4.0
+- **React Plugin:** @vitejs/plugin-react 4.0.0
 - **Runtime:** Node.js 24.x
-- **Deployment:** Vercel (SPA-optimized)
-- **Styling:** Inline CSS-in-JS
-- **Visualization:** SVG-based dynamic charts
+- **Styling:** Inline CSS-in-JS (no external CSS framework)
+- **Visualization:** SVG (charts) + Canvas (background animation)
 
 ---
 
-## ✨ Features
-
-### Core Capabilities
-- **Multi-scenario Risk Simulation** – Analyze risk profiles across 6 domains:
-  - Company (organizational risk)
-  - Healthcare (health-related risks)
-  - Real Estate (property/investment risk)
-  - Stocks/ETF (market/investment risk)
-  - Lifestyle (personal lifestyle risks)
-  - Retirement (long-term financial security)
-
-- **Real-time Risk Calculation** – Dynamic computation of stability scores and risk factors
-- **Trait-based Customization** – Select up to 3 traits per simulation to refine risk modeling
-- **Interactive Visualization** – Color-coded risk charts with live updates
-- **Stability Evolution** – Track system stability over multi-year projections
-- **AI-powered Risk Reports** – Generate strategic analysis summaries for each simulation
-- **Simulation History** – Store and review up to 100 previous simulations
-- **Freemium Model** – Free tier with daily usage limits; Pro tier for unlimited access
-
-### Risk Dimensions Evaluated
-- Burnout & workforce stress
-- Financial instability
-- Cybersecurity threats
-- Automation & AI risk
-- Knowledge degradation
-- Dependency structures
-- Market dynamics
-- Operational risk
-- Governance & ethics
-- Reputation impact
-
----
-
-## 📂 Project Structure
+## Project Structure
 
 ```
 .
 ├── src/
-│   ├── App.jsx              # Main React component (simulation engine & UI)
-│   └── main.jsx             # React entry point
-├── index.html               # HTML template (SPA root)
-├── vite.config.js           # Vite build configuration
-├── vercel.json              # Vercel deployment config (SPA rewrite)
-├── package.json             # Dependencies & scripts
-├── LICENSE                  # GPL-3.0 license
-└── README.md                # This file
+│   ├── App.jsx              Main React component (all pages, simulation logic, UI)
+│   └── main.jsx             React entry point with ReactDOM.createRoot()
+├── index.html               HTML template with root div and module script
+├── vite.config.js           Vite configuration with React plugin
+├── vercel.json              Vercel deployment config (SPA rewrite rules)
+├── package.json             Dependencies and npm scripts
+├── LICENSE                  GPL-3.0 license
+└── README.md                This file
 ```
 
 ---
 
-## 🏃 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Node.js 24.x or higher
@@ -80,11 +80,8 @@
 ### Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/Strategic-Systems-Lab/Critical-Risk-System-Analysis.git
 cd Critical-Risk-System-Analysis
-
-# Install dependencies
 npm install
 ```
 
@@ -94,7 +91,7 @@ npm install
 npm run dev
 ```
 
-The application will start at `http://localhost:5173` (Vite default).
+The app will start at `http://localhost:5173` (Vite default).
 
 ### Build for Production
 
@@ -102,85 +99,83 @@ The application will start at `http://localhost:5173` (Vite default).
 npm run build
 ```
 
-Output is generated in the `dist/` directory.
+Output is written to the `dist/` directory.
 
-### Preview Production Build Locally
+### Preview Production Build
 
 ```bash
 npm run preview
 ```
 
+Serves the built application locally at `http://localhost:4173`.
+
 ---
 
-## 🚀 Deployment
+## Deployment
 
-### Vercel Integration
+### Vercel
 
-The project is configured for seamless Vercel deployment:
+The application is configured for Vercel deployment:
 
 1. **Framework:** Vite
 2. **Build Command:** `npm install && npm run build`
 3. **Output Directory:** `dist`
-4. **SPA Rewrite:** All routes rewrite to `index.html` (configured in `vercel.json`)
+4. **SPA Handling:** All routes rewrite to `/index.html`
 
-**Deploy:**
-```bash
-vercel deploy
-```
-
-Or connect your GitHub repository to Vercel for automatic deployments on push.
+**To deploy:**
+- Connect your GitHub repository to Vercel, or
+- Run `vercel deploy` in the project directory
 
 ---
 
-## 📋 Available Scripts
+## Available Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start local development server (hot reload) |
-| `npm run build` | Build for production (minified, optimized) |
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Start local development server with hot reload |
+| `npm run build` | Build optimized production bundle |
 | `npm run preview` | Preview production build locally |
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
 
-### Key Points
 - Modifications and derivatives must remain open-source
-- Any distribution or deployment requires GPL compliance
-- For commercial licensing inquiries, please contact the repository maintainers
-
-See `LICENSE` file for full details.
+- All use requires GPL-3.0 compliance
+- See `LICENSE` file for full text
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-We welcome contributions! Areas of interest:
+Contributions are welcome. Areas of interest include:
 
-- Risk modeling algorithms
-- Simulation accuracy & validation
+- Risk modeling algorithms and accuracy
+- New simulation domains or parameters
 - UI/UX improvements
 - Performance optimization
-- Chart visualizations
+- Visualization enhancements
 - Documentation
 
-**How to contribute:**
+**To contribute:**
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -m 'Add your feature'`)
-4. Push to the branch (`git push origin feature/your-feature`)
+3. Commit your changes (`git commit -m 'Describe your changes'`)
+4. Push to your branch (`git push origin feature/your-feature`)
 5. Open a Pull Request
 
 ---
 
-## 🔗 Links
+## Version
 
-- **Live Application:** https://critical-risk-system-analysis-l7cd-git-vercel-ins-3aca1c-riskai.vercel.app/
-- **Repository:** https://github.com/Strategic-Systems-Lab/Critical-Risk-System-Analysis
-- **License:** GPL-3.0
+Current version: **3.2.1**
 
 ---
 
-**Understanding complexity. Analyzing risk. Enabling better decisions.**
+## Links
+
+- **Live Application:** https://critical-risk-system-analysis-l7cd-git-vercel-ins-3aca1c-riskai.vercel.app/
+- **Repository:** https://github.com/Strategic-Systems-Lab/Critical-Risk-System-Analysis
+- **License:** GPL-3.0 (see `LICENSE` file)
