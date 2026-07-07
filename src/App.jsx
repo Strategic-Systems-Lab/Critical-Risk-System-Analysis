@@ -1,4 +1,5 @@
 import{useState,useEffect,useRef}from"react";
+import{Analytics}from"@vercel/analytics/react";
 
 function cl(v,lo=1,hi=100){return Math.min(hi,Math.max(lo,Math.round(v)));}
 function risk(bad,good,y,s=1,ceil=88,fl=8){return cl(Math.max(fl,(38+(bad-good)/10*55*s)*(1+(y-1)*.01)),fl,ceil);}
@@ -423,5 +424,6 @@ return (<div style={bg}><style>{CSS}</style><div style={grd}/>
  <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(6,8,16,0.97)",borderTop:"1px solid #1e2d40",display:"grid",gridTemplateColumns:"repeat(4,1fr)",zIndex:100}}>
   {[["sim","⚡","Simulate"],["history","📋","History"],["pricing","💎","Pricing"],["home","📖","About"]].map(([id,icon,lb])=>(<button key={id} onClick={()=>setPage(id)} style={{background:"none",border:"none",color:page===id?"#00d4ff":"#4a5568",cursor:"pointer",padding:"10px 4px 14px",fontSize:9,letterSpacing:.5,textTransform:"uppercase",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}><span style={{fontSize:20}}>{icon}</span>{lb}</button>))}
  </div>
+<Analytics/>
 </div>);
 }
