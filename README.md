@@ -148,34 +148,10 @@ Nine modules, each reading only the generic result shape (`risks`, `stability`, 
 
 ---
 
-## 🧑‍💻 For Contributors
-
-Running the app locally is only needed for development or contributions — the production app is hosted separately. 
-
-```
-git clone https://github.com/Strategic-Systems-Lab/Critical-Risk-System-Analysis.git
-cd Critical-Risk-System-Analysis
-npm install
-npm run dev      # http://localhost:5173
-```
-
-Node.js 24.x or higher required. `npm run build` / `npm run preview` for a local production build.
-
----
-
-## ☁️ Deployment
-
-Configured for Vercel via `vercel.json` (Vite framework preset, `npm install && npm run build`, output `dist`, SPA rewrite to `index.html`).
-
-Connect the GitHub repository to Vercel for automatic deployments on push, or run `vercel deploy` locally.
-
----
-
 ## 📚 Documentation
 
 - [Methodology & Limitations](docs/METHODOLOGY.md) – how risk scores are calculated, explainability approach, assumptions, and known limitations
 - [Architecture](#project-structure) – project structure, above
-- [Deployment](#️-deployment) – Vercel configuration, above
 
 ---
 
@@ -192,18 +168,6 @@ Connect the GitHub repository to Vercel for automatic deployments on push, or ru
 ## 📄 License
 
 GNU General Public License v3.0 (GPL-3.0). Modifications and derivatives must remain open-source. See `LICENSE` for full terms.
-
----
-
-## 🤝 Contributing
-
-Contributions welcome — risk modeling and formula calibration, new simulation domains (`src/classes/`), new Risk Intelligence modules (`src/package2/`), UI/UX, performance, documentation.
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Commit changes (`git commit -m 'Describe changes'`)
-4. Push the branch (`git push origin feature/your-feature`)
-5. Open a Pull Request
 
 ---
 
