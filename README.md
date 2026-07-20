@@ -71,7 +71,7 @@ Nine modules, each reading only the generic result shape (`risks`, `stability`, 
 - **Free plan** – Company, Real Estate, Stocks/ETF, Lifestyle; limited daily simulations
 - **Pro plan** – all 6 domains, unlimited simulations
 - **History** – up to 100 past simulations retained with full parameters
-- **Legal page** – minimal TMG/DSGVO-compliant Impressum & Datenschutz notice
+- **Legal page** – TMG/DSGVO-compliant Impressum & Datenschutz notice
 
 ### UI
 
