@@ -7,6 +7,7 @@ import{simStocks,CLS_STOCKS}from"./classes/stocksEtf";
 import{simLifestyle,CLS_LIFESTYLE,TRAITS}from"./classes/lifestyle";
 import{simRetirement,CLS_RETIREMENT}from"./classes/retirement";
 import{RiskIntelligencePanel}from"./package2";
+import{supabase}from"./supabaseClient";
 const G="#4a5568",D="#00d4ff",V="#00ff9d",K="#1e2d40",B="#8892a4",J="#ff2d55",Q="#ff6b35",X="#0d1117",O="monospace",E="center",P="pointer",U="uppercase",T="transparent",A="balance",I="hidden",Y="right";
 
 /**
@@ -233,6 +234,13 @@ const[aiText,setAiText]=useState("");
 const[aiLoad,setAiLoad]=useState(false);
 const[plan,setPlan]=useState("free");
 const[usage,setUsage]=useState(()=>({date:new Date().toDateString(),count:0}));
+const[session,setSession]=useState(null);
+const[authLoading,setAuthLoading]=useState(true);
+const[authMode,setAuthMode]=useState("signin");
+const[authEmail,setAuthEmail]=useState("");
+const[authPass,setAuthPass]=useState("");
+const[authErr,setAuthErr]=useState("");
+const[authBusy,setAuthBusy]=useState(false);
 
 const cfg=cls?CLS[cls]:null;
 const limited=plan==="free";
@@ -240,6 +248,31 @@ const today=new Date().toDateString();
 const usedToday=usage.date===today?usage.count:0;
 const atLimit=limited&&usedToday>=DAILY_LIMIT;
 function trackUsage(){if(limited){setUsage(u=>({date:today,count:(u.date===today?u.count:0)+1}));}}
+
+useEffect(()=>{
+ supabase.auth.getSession().then(({data})=>{setSession(data.session);setAuthLoading(false);});
+ const{data:listener}=supabase.auth.onAuthStateChange((_event,newSession)=>{setSession(newSession);});
+ return()=>listener.subscription.unsubscribe();
+},[]);
+
+async function handleAuthSubmit(e){
+ e.preventDefault();
+ setAuthErr("");setAuthBusy(true);
+ try{
+  if(authMode==="signup"){
+   const{error}=await supabase.auth.signUp({email:authEmail,password:authPass});
+   if(error)throw error;
+   setAuthErr("Check your inbox to confirm your email, then sign in.");
+   setAuthMode("signin");
+  }else{
+   const{error}=await supabase.auth.signInWithPassword({email:authEmail,password:authPass});
+   if(error)throw error;
+   setPage("home");
+  }
+ }catch(err){setAuthErr(err.message||"Something went wrong.");}
+ setAuthBusy(false);
+}
+async function handleSignOut(){await supabase.auth.signOut();setPage("home");}
 
 useEffect(()=>{
  if(!cfg)return;
@@ -299,6 +332,9 @@ if(loading){
 }
 
 return (<div style={bg}><style>{CSS}</style><div style={grd}/>
+ <div style={{position:"fixed",top:10,right:10,zIndex:200,fontSize:11}}>
+  {authLoading?null:session?(<div style={{display:"flex",alignItems:"center",gap:6,background:"rgba(13,17,23,0.9)",border:"1px solid #1e2d40",borderRadius:20,padding:"5px 10px"}}><span style={{color:G}}>{session.user.email.split("@")[0]}</span><button onClick={handleSignOut} style={{background:"none",border:"none",color:B,cursor:P,fontSize:11,padding:0}}>Sign out</button></div>):(<button onClick={()=>setPage("auth")} style={{background:"rgba(13,17,23,0.9)",border:"1px solid #1e2d40",color:D,borderRadius:20,padding:"5px 14px",cursor:P,fontSize:11,fontWeight:700}}>Sign In</button>)}
+ </div>
 
  {page==="home"&&(<div className="F" style={{...sc,paddingTop:0}}>
   <div style={{position:"relative",overflow:I,borderRadius:12}}>
@@ -444,6 +480,20 @@ return (<div style={bg}><style>{CSS}</style><div style={grd}/>
    {history.length>0&&<button onClick={()=>{if(confirm("Clear all "+history.length+" entries?"))setHistory([]);}} style={{background:T,border:"1px solid #1e2d40",color:G,borderRadius:4,padding:"5px 12px",cursor:P,fontSize:11}}>Clear</button>}
   </div>
   {history.length===0?<div style={card()}><div style={{textAlign:E,color:G,padding:"20px 0"}}>No simulations yet.</div></div>:history.map(e=>{const c=e.avg>=65?J:e.avg>=45?Q:V;return (<div key={e.id} onClick={()=>{setResult(e);setPage("results");}} style={{...card(),cursor:P}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontWeight:700}}>{e.icon} {e.entity}</span><span style={{fontSize:10,color:G,fontFamily:O}}>{e.date}</span></div><div style={{fontSize:11,color:G,marginBottom:8}}>{e.label} · {e.years}yr</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{[{tx:"Load: "+e.avg+"%",c},{tx:"Stability: "+e.stability+"%",c:V},{tx:"⚠ "+e.worst,c:J}].map(({tx,c:co})=>(<span key={tx} style={{fontSize:10,padding:"2px 8px",borderRadius:20,border:"1px solid "+co,color:co}}>{tx}</span>))}</div></div>);})}
+ </div>)}
+
+ {page==="auth"&&(<div className="F" style={sc}>
+  <div style={{fontFamily:O,fontSize:12,color:D,letterSpacing:2,marginBottom:8}}>◈ {authMode==="signup"?"CREATE ACCOUNT":"SIGN IN"}</div>
+  <div style={{fontSize:22,fontWeight:800,marginBottom:16}}>{authMode==="signup"?"Save your progress":"Welcome back"}</div>
+  <form onSubmit={handleAuthSubmit} style={card()}>
+   <label style={{fontSize:11,color:G,display:"block",marginBottom:6}}>Email</label>
+   <input type="email" required value={authEmail} onChange={e=>setAuthEmail(e.target.value)} style={{width:"100%",background:X,border:"1px solid #1e2d40",borderRadius:4,padding:"10px 12px",color:"#e2e8f0",fontSize:13,marginBottom:12,boxSizing:"border-box"}} placeholder="you@example.com"/>
+   <label style={{fontSize:11,color:G,display:"block",marginBottom:6}}>Password</label>
+   <input type="password" required minLength={6} value={authPass} onChange={e=>setAuthPass(e.target.value)} style={{width:"100%",background:X,border:"1px solid #1e2d40",borderRadius:4,padding:"10px 12px",color:"#e2e8f0",fontSize:13,marginBottom:14,boxSizing:"border-box"}} placeholder="At least 6 characters"/>
+   {authErr&&<div style={{fontSize:12,color:authErr.includes("Check your inbox")?V:J,marginBottom:12,lineHeight:1.5}}>{authErr}</div>}
+   <button type="submit" disabled={authBusy} style={{width:"100%",background:D,color:"#000",border:"none",borderRadius:4,padding:"11px",fontWeight:800,fontSize:13,cursor:P,opacity:authBusy?.6:1}}>{authBusy?"Please wait…":authMode==="signup"?"Create account":"Sign in"}</button>
+  </form>
+  <div style={{textAlign:E,fontSize:12,color:G,marginTop:12}}>{authMode==="signup"?"Already have an account? ":"New here? "}<span onClick={()=>{setAuthMode(authMode==="signup"?"signin":"signup");setAuthErr("");}} style={{color:D,cursor:P,textDecoration:"underline"}}>{authMode==="signup"?"Sign in":"Create one"}</span></div>
  </div>)}
 
  {page==="pricing"&&(<div className="F" style={sc}>
