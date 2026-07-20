@@ -14,7 +14,7 @@ RiskAI takes a different approach. Every domain uses transparent, rule-based for
 
 That transparency also addresses a common weakness of one-off analysis: risk isn't a snapshot. RiskAI tracks how a simulation evolves across repeated runs, surfaces what changed and why, and turns the highest-impact risk categories into concrete next steps instead of leaving the user with a number and no direction.
 
-The system is explicitly rule-based today, not machine-learning-driven — traceable formulas are easier to audit than opaque models. The architecture is decoupled by design so more sophisticated models can be added later without changing how results are consumed. Full detail in [Methodology & Limitations](docs/METHODOLOGY.md).
+The system is explicitly rule-based today, not machine-learning-driven — traceable formulas are easier to audit than opaque models. Where real, citable data exists, it's used directly (see [Recent Improvements](#recent-improvements) below); where it doesn't, formulas stay openly heuristic rather than pretending otherwise. The architecture is decoupled by design so more sophisticated models can be added later without changing how results are consumed. Full detail in [Methodology & Limitations](docs/METHODOLOGY.md).
 
 ---
 
@@ -34,7 +34,7 @@ RiskAI is a React single-page application built from two cooperating packages:
 - **Six risk domains:** 🏢 Company, 🏥 Healthcare, 🏠 Real Estate, 📈 Stocks/ETF, 🧍 Lifestyle, 🏦 Retirement
 - **Multi-factor analysis** – up to 10 independent, deterministically-scored risk factors per domain
 - **Stability scoring & trajectory** – deterministic multi-year projection (1–60 years, domain-dependent)
-- **Wealth / net-worth projections** – Real Estate, Stocks/ETF, Retirement, and Lifestyle
+- **Wealth / net-worth projections** – Real Estate, Stocks/ETF, Retirement, and Lifestyle; Stocks/ETF and Retirement use a Monte Carlo engine calibrated to real historical market statistics (see [Recent Improvements](#recent-improvements))
 - **Plausibility checks** – flags inconsistent inputs (e.g., rent below mortgage cost) and explains the impact directly in the report
 
 ### Parameters & Presets
@@ -68,7 +68,7 @@ Nine modules, each reading only the generic result shape (`risks`, `stability`, 
 
 ### Plans, History & Legal
 
-- **Free plan** – Company, Real Estate, Stocks/ETF, Lifestyle; 3 simulations/day
+- **Free plan** – Company, Real Estate, Stocks/ETF, Lifestyle; limited daily simulations
 - **Pro plan** – all 6 domains, unlimited simulations
 - **History** – up to 100 past simulations retained with full parameters
 - **Legal page** – minimal TMG/DSGVO-compliant Impressum & Datenschutz notice
@@ -80,6 +80,14 @@ Nine modules, each reading only the generic result shape (`risks`, `stability`, 
 ---
 
 ## 🛠️ Recent Improvements
+
+**Data-grounded risk models** — three heuristic formulas replaced with real, citable data or peer-reviewed methodology, each verified against known reference points before shipping:
+
+- **Monte Carlo wealth projection** (Stocks/ETF, Retirement) – replaced a formula tied to the app's own internal stability score with a 500-path simulation calibrated to long-run historical market statistics (equities ⌀10% return / ~19% volatility, safe assets ⌀4.5% / ~6%), blended by actual portfolio allocation. Seeded for determinism — identical inputs still always produce identical output.
+- **Altman Z''-Score for Company / Financial risk** – replaced a heuristic formula with an adapted version of the 1968 peer-reviewed bankruptcy-prediction model, using the original published coefficients unmodified.
+- **Real actuarial life-expectancy data for Retirement / Longevity risk** – replaced a near-inert heuristic (previously an 8-point swing across its entire input range) with a period life-table-based calculation, now meaningfully responsive to current age, retirement timing, and family longevity input.
+
+**Architecture & correctness:**
 
 - **Modular domain architecture** – five of six risk domains extracted into independent modules, roughly halving the core file size and removing the practical ceiling on future growth
 - **Removed a value-inflation step** that could artificially raise displayed risk percentages for already-healthy simulations
@@ -108,7 +116,7 @@ Nine modules, each reading only the generic result shape (`risks`, `stability`, 
 .
 ├── src/
 │   ├── App.jsx                  Core app: routing, state, Company risk model, UI shell
-│   ├── formulaHelpers.js        Shared risk-formula primitives (cl, risk, stab, mkY)
+│   ├── formulaHelpers.js        Shared risk-formula primitives (cl, risk, stab, mkY, monteCarloWealth, yearsInRetirement)
 │   ├── legal.jsx                 Impressum & Datenschutz page
 │   ├── main.jsx                  React entry point
 │   │
