@@ -1,4 +1,4 @@
-import { risk, stab } from "../formulaHelpers";
+import { risk, stab, yearsInRetirement } from "../formulaHelpers";
 
 export const CLS_RETIREMENT = {
   icon: "🏦", label: "Retirement", eLabel: "Your name / plan", color: "#a78bfa", maxYears: 60,
@@ -23,7 +23,7 @@ export function simRetirement(p, y) {
     "Sequence-of-returns risk": risk(p.equity_pct / 10, (10 - Math.max(0, 10 - yrsLeft / 3)) * .6 + p.diversification * .4, y, 1.25, 90, 8),
     "Inflation erosion": risk(10 - p.inflation_protection, p.equity_pct / 12, y, 1.1, 84, 8),
     "Contribution gap": risk(10 - (p.monthly_contribution / Math.max(1, p.pension_assets / 100 + 50) * 10), p.discipline * .5, y, 1.05, 82, 8),
-    "Longevity risk": risk(p.life_expectancy / 10, p.pension_assets / Math.max(1, p.monthly_contribution * 1200) * 2 + p.diversification * .3, y, 1.15, 86, 8),
+    "Longevity risk": risk(yearsInRetirement(p.age, p.retire_age, p.life_expectancy) / 3.5, p.pension_assets / Math.max(1, p.monthly_contribution * 150) * 2 + p.diversification * .3, y, 1.15, 86, 8),
     "Healthcare cost exposure": risk(10 - p.healthcare_buffer, p.diversification * .4, y, 1.1, 84, 8),
     "State pension shortfall": risk(10 - p.state_pension_reliance, p.pension_assets / Math.max(1, p.monthly_contribution * 100) * 2, y, .95, 78, 8),
     "Early retirement risk": risk(Math.max(0, 10 - yrsLeft), p.pension_assets / Math.max(1, p.monthly_contribution * 1000) * 2, y, 1, 80, 7),
