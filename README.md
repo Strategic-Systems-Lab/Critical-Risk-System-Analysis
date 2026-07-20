@@ -34,12 +34,12 @@ RiskAI is a React single-page application built from two cooperating packages:
 - **Six risk domains:** 🏢 Company, 🏥 Healthcare, 🏠 Real Estate, 📈 Stocks/ETF, 🧍 Lifestyle, 🏦 Retirement
 - **Multi-factor analysis** – up to 10 independent, deterministically-scored risk factors per domain
 - **Stability scoring & trajectory** – deterministic multi-year projection (1–60 years, domain-dependent)
-- **Wealth / net-worth projections** – Real Estate, Stocks/ETF, Retirement, and Lifestyle; Stocks/ETF and Retirement use a Monte Carlo engine calibrated to real historical market statistics (see [Recent Improvements](#recent-improvements))
+- **Wealth / net-worth / cash runway projections** – five of six domains: Company (cash runway), Real Estate, Stocks/ETF, Retirement, and Lifestyle; Stocks/ETF and Retirement use a Monte Carlo engine calibrated to real historical market statistics (see [Recent Improvements](#recent-improvements))
 - **Plausibility checks** – flags inconsistent inputs (e.g., rent below mortgage cost) and explains the impact directly in the report
 
 ### Parameters & Presets
 
-- **Up to 17 parameters per domain** with preset profiles for a fast start
+- **Up to 15 parameters per domain** with preset profiles for a fast start
 - **Leadership style** (Company) – six behavioral modifiers: stable, visionary, aggressive, cooperative, authoritarian, democratic
 - **Trait selection** (Lifestyle) – up to 3 of 8 traits (variable income, dependents, high debt, and others)
 - **Input transparency** – results show how many parameters were customized versus left at defaults
@@ -81,11 +81,12 @@ Nine modules, each reading only the generic result shape (`risks`, `stability`, 
 
 ## 🛠️ Recent Improvements
 
-**Data-grounded risk models** — three heuristic formulas replaced with real, citable data or peer-reviewed methodology, each verified against known reference points before shipping:
+**Data-grounded risk models** — four heuristic formulas replaced or refined with real, citable data or peer-reviewed methodology, each verified against known reference points before shipping:
 
 - **Monte Carlo wealth projection** (Stocks/ETF, Retirement) – replaced a formula tied to the app's own internal stability score with a 500-path simulation calibrated to long-run historical market statistics (equities ⌀10% return / ~19% volatility, safe assets ⌀4.5% / ~6%), blended by actual portfolio allocation. Seeded for determinism — identical inputs still always produce identical output.
 - **Altman Z''-Score for Company / Financial risk** – replaced a heuristic formula with an adapted version of the 1968 peer-reviewed bankruptcy-prediction model, using the original published coefficients unmodified.
 - **Real actuarial life-expectancy data for Retirement / Longevity risk** – replaced a near-inert heuristic (previously an 8-point swing across its entire input range) with a period life-table-based calculation, now meaningfully responsive to current age, retirement timing, and family longevity input.
+- **Refined the Altman Z-Score's Working Capital ratio** – now uses a real `cash_reserves` field directly, replacing an approximated proxy that was documented as a known limitation when the model was first integrated.
 
 **Architecture & correctness:**
 
@@ -93,6 +94,7 @@ Nine modules, each reading only the generic result shape (`risks`, `stability`, 
 - **Removed a value-inflation step** that could artificially raise displayed risk percentages for already-healthy simulations
 - **Deterministic forecasting** – identical inputs now always produce identical multi-year trajectories
 - **Recalibrated two formulas** (Retirement's state pension shortfall sensitivity; Real Estate's interest rate exposure ceiling) that previously responded too weakly or saturated too early
+- **Streamlined Company's parameters and closed a missing-chart gap** – removed three parameters (`employees`, `digitization`, `innovation`) that had no measurable or only marginal effect on results, taking Company from 17 to 15 parameters; added a Cash Runway & Reserves projection — the wealth-equivalent chart every other domain already had, which Company was missing entirely
 
 ---
 
