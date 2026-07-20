@@ -17,10 +17,10 @@ import { SimResult } from './types';
 export const DRIVER_HINTS: Record<string, Record<string, string>> = {
   '1': { // Company
     Burnout: 'risk_tolerance↓ / training↑',
-    Financial: 'debt↓ / cashflow↑',
+    Financial: 'cash_reserves↑ / debt↓ (Altman Z-Score based)',
     Cyber: 'cybersec↑',
     Governance: 'compliance↑ / transparency↑',
-    Market: 'adaptability↑ / innovation↑',
+    Market: 'adaptability↑ / transparency↑',
     Dependency: 'redundancy↑',
     Operational: 'compliance↑ / redundancy↑',
     'Knowledge loss': 'training↑',
