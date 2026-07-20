@@ -275,6 +275,30 @@ async function handleAuthSubmit(e){
 async function handleSignOut(){await supabase.auth.signOut();setPage("home");}
 
 useEffect(()=>{
+ if(!session){setPlan("free");return;}
+ supabase.from("subscriptions").select("plan").eq("user_id",session.user.id).single()
+  .then(({data,error})=>{
+   if(error){console.error("Failed to load subscription:",error);setPlan("free");return;}
+   setPlan(data?.plan||"free");
+  });
+},[session]);
+
+useEffect(()=>{
+ if(!session)return;
+ supabase.from("simulations").select("result").eq("user_id",session.user.id).order("created_at",{ascending:false}).limit(100)
+  .then(({data,error})=>{
+   if(error){console.error("Failed to load simulation history:",error);return;}
+   if(data)setHistory(data.map(row=>row.result));
+  });
+},[session]);
+
+async function saveSimulationToDb(entry){
+ if(!session)return;
+ const{error}=await supabase.from("simulations").insert({user_id:session.user.id,cls:entry.cls,entity:entry.entity,years:entry.years,params:entry.params,result:entry});
+ if(error)console.error("Failed to save simulation:",error);
+}
+
+useEffect(()=>{
  if(!cfg)return;
  const pr=cfg.profiles[profIdx]?.p;
  const init={};cfg.fields.forEach(f=>{init[f.k]=pr?(pr[f.k]??f.d):f.d;});
@@ -297,7 +321,7 @@ function buildEntry(p,yr){
  const sorted=Object.entries(rk).sort((a,b)=>b[1]-a[1]);
  return{id:Date.now(),cls,label:cfg.label,icon:cfg.icon,entity,years:yr,params:p,stability:res.stability,avg,worst:sorted[0][0],best:sorted[sorted.length-1][0],risks:rk,yearly:res.yearly,wealth:projectWealth(cls,p,yr,res.stability),netWorth:cls==="9"?projectNetWorth(p,yr,res.stability):null,date:new Date().toLocaleDateString(),cst:cfg.fields.filter(f=>(p[f.k]??f.d)!==f.d).length,ctt:cfg.fields.length,warn:sanityWarn(cls,p)};
 }
-function finish(entry){setResult(entry);setHistory(h=>[entry,...h.slice(0,99)]);setAiText("");setPage("results");setTimeout(()=>{setAiLoad(true);setTimeout(()=>{setAiText(localAI(entry));setAiLoad(false);},1200);},300);}
+function finish(entry){setResult(entry);setHistory(h=>[entry,...h.slice(0,99)]);saveSimulationToDb(entry);setAiText("");setPage("results");setTimeout(()=>{setAiLoad(true);setTimeout(()=>{setAiText(localAI(entry));setAiLoad(false);},1200);},300);}
 function runStd(){if(!cls||!entity.trim()||atLimit)return;trackUsage();const clean={...params};cfg.fields.forEach(f=>{if(clean[f.k]===""||clean[f.k]==null)clean[f.k]=f.d;});startLoad(20000,()=>finish(buildEntry({...clean,style:sty},years)));}
 
 const bg={minHeight:"100vh",background:"#060810",color:"#e2e8f0",fontFamily:"'Exo 2','Segoe UI',sans-serif",overflowX:I};
