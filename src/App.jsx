@@ -15,16 +15,13 @@ const G="#4a5568",D="#00d4ff",V="#00ff9d",K="#1e2d40",B="#8892a4",J="#ff2d55",Q=
  * used UNMODIFIED. Replaces the Company class's previous heuristic
  * "Financial" formula.
  *
- * Honest limitation: our simplified model doesn't track a full balance
- * sheet, so 2 of the 4 required ratios are approximated from available
- * fields rather than measured directly:
- *   X1 (Working Capital / Total Assets) — approximated as 3 months of
- *       operating surplus (revenue-expenses), since no current-assets/
- *       current-liabilities split exists in this model.
- *   X2 (Retained Earnings / Total Assets) — approximated using book
- *       equity (assets-debt), since accumulated historical earnings
- *       aren't tracked. This makes X2 correlated with X4 by construction —
- *       a real limitation, not hidden here.
+ * X1 (Working Capital / Total Assets) now uses the real cash_reserves
+ * field directly — previously approximated as 3 months of operating
+ * surplus, since no current-assets figure existed in the model. That
+ * limitation is resolved.
+ * X2 (Retained Earnings / Total Assets) still uses book equity
+ * (assets-debt) as a proxy — no accumulated-earnings-over-time field
+ * exists yet. This remains a documented, open limitation.
  * X3 (EBIT/Assets) and X4 (Equity/Liabilities) are computed directly from
  * existing fields with no invented proxy.
  * Thresholds (1.1 = distress, 2.6 = safe) are Altman's own published
@@ -32,7 +29,7 @@ const G="#4a5568",D="#00d4ff",V="#00ff9d",K="#1e2d40",B="#8892a4",J="#ff2d55",Q=
  */
 function altmanZScore(p){
 const TA=Math.max(1,p.assets*1000),TL=Math.max(1,p.debt);
-const ebit=(p.revenue-p.expenses)*12,equity=TA-TL,wc=(p.revenue-p.expenses)*3;
+const ebit=(p.revenue-p.expenses)*12,equity=TA-TL,wc=p.cash_reserves;
 return 6.56*(wc/TA)+3.26*(equity/TA)+6.72*(ebit/TA)+1.05*(equity/TL);
 }
 function financialRiskFromZ(z){return cl(82-(z-1.1)/(2.6-1.1)*62,8,82);}
@@ -43,6 +40,7 @@ if(id==="1"&&p.expenses>p.revenue)return"Expenses exceed revenue — this struct
 return null;
 }
 function projectWealth(cls,p,years,stability){
+if(cls==="1")return projectCashRunway(p,years);
 if(cls==="8")return monteCarloWealth(p.capital,p.monthly_savings,years,p.stock_pct);
 if(cls==="10")return monteCarloWealth(p.pension_assets,p.monthly_contribution,years,p.equity_pct);
 const rate=(stability-50)/100*0.06+0.04;
@@ -52,6 +50,21 @@ else return null;
 let v=start;const pts=[{year:0,value:Math.round(v)}];
 for(let i=1;i<=years;i++){v=v*(1+rate)+monthly*12;pts.push({year:i,value:Math.round(v)});}
 return{start:Math.round(start),final:Math.round(v),pts,rate};
+}
+/**
+ * Cash runway projection for Company — the wealth-equivalent chart this
+ * class was previously missing entirely (Lifestyle, Real Estate, Stocks/
+ * ETF, and Retirement all had one). Uses the real cash_reserves field and
+ * actual monthly revenue-expenses net. When burning cash, computes the
+ * exact runway in months — a standard, high-value startup/business metric.
+ */
+function projectCashRunway(p,years){
+const monthlyNet=p.revenue-p.expenses;
+let cash=p.cash_reserves;
+const pts=[{year:0,value:Math.round(cash)}];
+const runwayMonths=monthlyNet<0?Math.floor(cash/Math.abs(monthlyNet)):null;
+for(let i=1;i<=years;i++){cash=Math.max(0,cash+monthlyNet*12);pts.push({year:i,value:Math.round(cash)});}
+return{start:Math.round(p.cash_reserves),final:Math.round(cash),pts,monthlyNet:Math.round(monthlyNet),runwayMonths,burning:monthlyNet<0,method:"cash-runway"};
 }
 function projectNetWorth(p,years,stability){
 const rate=(stability-50)/100*0.04+0.025;
@@ -66,7 +79,7 @@ return{startDebt:Math.round(p.debt),startSavings:Math.round(p.savings),startNet:
 function simAny(id,p,y){
 if(id==="1"){
 const sm=({aggressive:1.5,cooperative:.75,authoritarian:1.65,visionary:1.05,stable:1,democratic:.85})[(p.style||"stable").toLowerCase()]||1;
-const risks={Burnout:risk(p.risk_tolerance*sm,(p.training+p.culture)/2,y,1.2,90,10),Financial:financialRiskFromZ(altmanZScore(p)),Cyber:risk(p.ai_usage*1.05,p.cybersec*1.1,y,1.3,88,12),Governance:risk(10-p.compliance,p.transparency,y,.85,74,8),Market:risk(10-p.adaptability,p.innovation*.95,y,.95,72,12),Dependency:risk(p.risk_tolerance,p.redundancy*1.2,y,.95,76,8),Operational:risk(10-p.compliance,p.redundancy,y,.75,65,7),"Knowledge loss":risk(10-p.training,p.culture*.8,y,.85,66,12),Automation:risk(p.ai_usage,p.compliance*1.05,y,1.1,80,12),Reputation:risk(10-p.transparency,p.culture*.9,y,.65,60,7)};
+const risks={Burnout:risk(p.risk_tolerance*sm,(p.training+p.culture)/2,y,1.2,90,10),Financial:financialRiskFromZ(altmanZScore(p)),Cyber:risk(p.ai_usage*1.05,p.cybersec*1.1,y,1.3,88,12),Governance:risk(10-p.compliance,p.transparency,y,.85,74,8),Market:risk(10-p.adaptability,p.transparency*.8,y,.95,72,12),Dependency:risk(p.risk_tolerance,p.redundancy*1.2,y,.95,76,8),Operational:risk(10-p.compliance,p.redundancy,y,.75,65,7),"Knowledge loss":risk(10-p.training,p.culture*.8,y,.85,66,12),Automation:risk(p.ai_usage,p.compliance*1.05,y,1.1,80,12),Reputation:risk(10-p.transparency,p.culture*.9,y,.65,60,7)};
 const stability=stab([p.culture,p.training,p.redundancy,p.compliance,p.cashflow],[p.risk_tolerance*sm,10-p.cybersec,10-p.adaptability]);
 return{risks,stability,yearly:mkY(stability,y)};
 }
@@ -77,8 +90,8 @@ return{risks,stability,yearly:mkY(stability,y)};
 
 const CLS={
 "1":{icon:"🏢",label:"Company",eLabel:"Company name",color:D,hasStyle:true,
- profiles:[{n:"Startup",p:{employees:50,assets:500,debt:200000,revenue:80000,expenses:90000,cashflow:4,innovation:8,risk_tolerance:7,digitization:7,cybersec:4,training:4,compliance:3,culture:7,redundancy:2,ai_usage:5,adaptability:8,transparency:6,style:"visionary"}},{n:"Corporation",p:{employees:5000,assets:8000,debt:3000000,revenue:1500000,expenses:1100000,cashflow:7,innovation:6,risk_tolerance:4,digitization:6,cybersec:7,training:6,compliance:8,culture:6,redundancy:7,ai_usage:6,adaptability:5,transparency:6,style:"stable"}},{n:"Crisis Co.",p:{employees:800,assets:2000,debt:1800000,revenue:300000,expenses:380000,cashflow:2,innovation:3,risk_tolerance:6,digitization:3,cybersec:3,training:3,compliance:4,culture:3,redundancy:3,ai_usage:4,adaptability:3,transparency:3,style:"authoritarian"}},{n:"Tech Giant",p:{employees:12000,assets:9500,debt:1200000,revenue:4000000,expenses:2200000,cashflow:9,innovation:9,risk_tolerance:5,digitization:9,cybersec:8,training:7,compliance:7,culture:7,redundancy:8,ai_usage:9,adaptability:8,transparency:6,style:"visionary"}},{n:"Manual",p:null}],
- fields:[{k:"employees",l:"Employees",d:500,lo:1,hi:15000},{k:"assets",l:"Assets (€)",d:3000,lo:1,hi:10000},{k:"debt",l:"Total Debt (€)",d:500000,lo:0,hi:3500000},{k:"revenue",l:"Monthly Revenue (€)",d:200000,lo:0,hi:4500000},{k:"expenses",l:"Monthly Expenses (€)",d:150000,lo:0,hi:2500000},{k:"cashflow",l:"Cashflow",d:5},{k:"innovation",l:"Innovation",d:5},{k:"risk_tolerance",l:"Risk Tolerance",d:5},{k:"digitization",l:"Digitization",d:5},{k:"cybersec",l:"Cybersecurity",d:5},{k:"training",l:"Training",d:5},{k:"compliance",l:"Compliance",d:5},{k:"culture",l:"Culture",d:5},{k:"redundancy",l:"Redundancy",d:5},{k:"ai_usage",l:"AI Usage",d:5},{k:"adaptability",l:"Adaptability",d:5},{k:"transparency",l:"Transparency",d:5}]},
+ profiles:[{n:"Startup",p:{assets:500,debt:200000,revenue:80000,expenses:90000,cash_reserves:120000,cashflow:4,risk_tolerance:7,cybersec:4,training:4,compliance:3,culture:7,redundancy:2,ai_usage:5,adaptability:8,transparency:6,style:"visionary"}},{n:"Corporation",p:{assets:8000,debt:3000000,revenue:1500000,expenses:1100000,cash_reserves:3000000,cashflow:7,risk_tolerance:4,cybersec:7,training:6,compliance:8,culture:6,redundancy:7,ai_usage:6,adaptability:5,transparency:6,style:"stable"}},{n:"Crisis Co.",p:{assets:2000,debt:1800000,revenue:300000,expenses:380000,cash_reserves:150000,cashflow:2,risk_tolerance:6,cybersec:3,training:3,compliance:4,culture:3,redundancy:3,ai_usage:4,adaptability:3,transparency:3,style:"authoritarian"}},{n:"Tech Giant",p:{assets:9500,debt:1200000,revenue:4000000,expenses:2200000,cash_reserves:20000000,cashflow:9,risk_tolerance:5,cybersec:8,training:7,compliance:7,culture:7,redundancy:8,ai_usage:9,adaptability:8,transparency:6,style:"visionary"}},{n:"Manual",p:null}],
+ fields:[{k:"assets",l:"Assets (€)",d:3000,lo:1,hi:10000},{k:"debt",l:"Total Debt (€)",d:500000,lo:0,hi:3500000},{k:"revenue",l:"Monthly Revenue (€)",d:200000,lo:0,hi:4500000},{k:"expenses",l:"Monthly Expenses (€)",d:150000,lo:0,hi:2500000},{k:"cash_reserves",l:"Cash Reserves (€)",d:200000,lo:0,hi:20000000},{k:"cashflow",l:"Cashflow",d:5},{k:"risk_tolerance",l:"Risk Tolerance",d:5},{k:"cybersec",l:"Cybersecurity",d:5},{k:"training",l:"Training",d:5},{k:"compliance",l:"Compliance",d:5},{k:"culture",l:"Culture",d:5},{k:"redundancy",l:"Redundancy",d:5},{k:"ai_usage",l:"AI Usage",d:5},{k:"adaptability",l:"Adaptability",d:5},{k:"transparency",l:"Transparency",d:5}]},
 "4":CLS_HEALTHCARE,
 "7":CLS_REALESTATE,
 "8":CLS_STOCKS,
@@ -375,17 +388,19 @@ return (<div style={bg}><style>{CSS}</style><div style={grd}/>
    <DonutChart risks={result.risks} color={CLS[result.cls]?.color||D}/>
   </div>
 
-  {result.wealth&&<div style={{...card("#00ff9d30"),background:"linear-gradient(135deg,#0d1117,#0a1f17)"}}>
-   <span style={lbl}>💰 Projected Asset Value · {result.years}yr</span>
+  {result.wealth&&<div style={{...card(result.wealth.burning?"#ff2d5530":"#00ff9d30"),background:result.wealth.burning?"linear-gradient(135deg,#0d1117,#1f0a0d)":"linear-gradient(135deg,#0d1117,#0a1f17)"}}>
+   <span style={lbl}>{result.wealth.method==="cash-runway"?"💵 Cash Runway & Reserves":"💰 Projected Asset Value"} · {result.years}yr</span>
    <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:10}}>
     <div><div style={{fontSize:10,color:G,marginBottom:2}}>Today</div><div style={{fontFamily:O,fontSize:16,color:B,fontWeight:700}}>€{result.wealth.start.toLocaleString()}</div></div>
-    <div style={{fontSize:18,color:V}}>→</div>
-    <div style={{textAlign:Y}}><div style={{fontSize:10,color:G,marginBottom:2}}>In {result.years} years (median)</div><div style={{fontFamily:O,fontSize:24,color:V,fontWeight:800}}>€{result.wealth.final.toLocaleString()}</div></div>
+    <div style={{fontSize:18,color:result.wealth.burning?J:V}}>→</div>
+    <div style={{textAlign:Y}}><div style={{fontSize:10,color:G,marginBottom:2}}>In {result.years} years{result.wealth.method==="monte-carlo"?" (median)":""}</div><div style={{fontFamily:O,fontSize:24,color:result.wealth.burning?J:V,fontWeight:800}}>€{result.wealth.final.toLocaleString()}</div></div>
    </div>
    {result.wealth.method==="monte-carlo"?
    <div style={{fontSize:12,color:B,lineHeight:1.6,marginBottom:8}}>500-path Monte Carlo simulation, {(result.wealth.meanReturn*100).toFixed(1)}%/yr expected return based on historical market statistics. Range: <span style={{color:J}}>€{result.wealth.p10.toLocaleString()}</span> (weak decade) to <span style={{color:V}}>€{result.wealth.p90.toLocaleString()}</span> (strong decade).</div>
+   :result.wealth.method==="cash-runway"?
+   <div style={{fontSize:12,color:B,lineHeight:1.6,marginBottom:8}}>{result.wealth.burning?<>🔥 Burning <span style={{color:J,fontWeight:700}}>€{Math.abs(result.wealth.monthlyNet).toLocaleString()}/mo</span> — at this rate, reserves run out in <span style={{color:J,fontWeight:700}}>{result.wealth.runwayMonths} months</span> unless revenue, expenses, or funding change.</>:<>📈 Accumulating <span style={{color:V,fontWeight:700}}>€{result.wealth.monthlyNet.toLocaleString()}/mo</span> in net cashflow — reserves compound at that rate over the simulation horizon.</>}</div>
    :<div style={{fontSize:12,color:B,lineHeight:1.6,marginBottom:8}}>{result.wealth.final>=result.wealth.start?"📈 +":"📉 −"}<span style={{color:result.wealth.final>=result.wealth.start?V:J,fontWeight:700}}>{Math.abs(Math.round((result.wealth.final-result.wealth.start)/Math.max(1,Math.abs(result.wealth.start))*100))}%</span> at {(result.wealth.rate*100).toFixed(1)}%/yr (stability-adjusted).</div>}
-   <Chart yearly={result.wealth.pts.map(p=>({stability:p.value}))} color={V}/>
+   <Chart yearly={result.wealth.pts.map(p=>({stability:p.value}))} color={result.wealth.burning?J:V}/>
    <div style={{fontSize:10,color:G,lineHeight:1.5,marginTop:8,paddingTop:8,borderTop:"1px solid #1e2d40",textWrap:A}}>⚠ Illustrative projection — not financial advice. Actual returns depend on market conditions.</div>
   </div>}
   {result.netWorth&&<div style={{...card("#fbbf2430"),background:"linear-gradient(135deg,#0d1117,#1f1a0a)"}}>
