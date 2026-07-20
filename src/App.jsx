@@ -1,6 +1,6 @@
 import{useState,useEffect,useRef}from"react";
 import{LegalPage}from"./legal";
-import{cl,risk,stab,mkY}from"./formulaHelpers";
+import{cl,risk,stab,mkY,monteCarloWealth}from"./formulaHelpers";
 import{simHealthcare,CLS_HEALTHCARE}from"./classes/healthcare";
 import{simRealEstate,CLS_REALESTATE}from"./classes/realEstate";
 import{simStocks,CLS_STOCKS}from"./classes/stocksEtf";
@@ -9,6 +9,33 @@ import{simRetirement,CLS_RETIREMENT}from"./classes/retirement";
 import{RiskIntelligencePanel}from"./package2";
 const G="#4a5568",D="#00d4ff",V="#00ff9d",K="#1e2d40",B="#8892a4",J="#ff2d55",Q="#ff6b35",X="#0d1117",O="monospace",E="center",P="pointer",U="uppercase",T="transparent",A="balance",I="hidden",Y="right";
 
+/**
+ * Altman Z''-Score (1995 revision, for private/non-manufacturing firms) —
+ * real, peer-reviewed bankruptcy-prediction formula, published coefficients
+ * used UNMODIFIED. Replaces the Company class's previous heuristic
+ * "Financial" formula.
+ *
+ * Honest limitation: our simplified model doesn't track a full balance
+ * sheet, so 2 of the 4 required ratios are approximated from available
+ * fields rather than measured directly:
+ *   X1 (Working Capital / Total Assets) — approximated as 3 months of
+ *       operating surplus (revenue-expenses), since no current-assets/
+ *       current-liabilities split exists in this model.
+ *   X2 (Retained Earnings / Total Assets) — approximated using book
+ *       equity (assets-debt), since accumulated historical earnings
+ *       aren't tracked. This makes X2 correlated with X4 by construction —
+ *       a real limitation, not hidden here.
+ * X3 (EBIT/Assets) and X4 (Equity/Liabilities) are computed directly from
+ * existing fields with no invented proxy.
+ * Thresholds (1.1 = distress, 2.6 = safe) are Altman's own published
+ * cutoffs — the risk-percentage mapping is linearly anchored to them.
+ */
+function altmanZScore(p){
+const TA=Math.max(1,p.assets*1000),TL=Math.max(1,p.debt);
+const ebit=(p.revenue-p.expenses)*12,equity=TA-TL,wc=(p.revenue-p.expenses)*3;
+return 6.56*(wc/TA)+3.26*(equity/TA)+6.72*(ebit/TA)+1.05*(equity/TL);
+}
+function financialRiskFromZ(z){return cl(82-(z-1.1)/(2.6-1.1)*62,8,82);}
 function sanityWarn(id,p){
 if(id==="7"&&p.rent_income<p.monthly_costs)return"Rent doesn't cover monthly costs — this structurally inflates Interest rate exposure and Liquidity risk below.";
 if(id==="9"&&p.expenses>p.income)return"Expenses exceed income — this structurally inflates Debt burden and Lifestyle inflation risk below.";
@@ -16,11 +43,11 @@ if(id==="1"&&p.expenses>p.revenue)return"Expenses exceed revenue — this struct
 return null;
 }
 function projectWealth(cls,p,years,stability){
+if(cls==="8")return monteCarloWealth(p.capital,p.monthly_savings,years,p.stock_pct);
+if(cls==="10")return monteCarloWealth(p.pension_assets,p.monthly_contribution,years,p.equity_pct);
 const rate=(stability-50)/100*0.06+0.04;
 let start=0,monthly=0;
 if(cls==="7"){start=(p.rent_income*12)/0.05-p.mortgage;monthly=(p.rent_income-p.monthly_costs);}
-else if(cls==="8"){start=p.capital;monthly=p.monthly_savings;}
-else if(cls==="10"){start=p.pension_assets;monthly=p.monthly_contribution;}
 else return null;
 let v=start;const pts=[{year:0,value:Math.round(v)}];
 for(let i=1;i<=years;i++){v=v*(1+rate)+monthly*12;pts.push({year:i,value:Math.round(v)});}
@@ -39,7 +66,7 @@ return{startDebt:Math.round(p.debt),startSavings:Math.round(p.savings),startNet:
 function simAny(id,p,y){
 if(id==="1"){
 const sm=({aggressive:1.5,cooperative:.75,authoritarian:1.65,visionary:1.05,stable:1,democratic:.85})[(p.style||"stable").toLowerCase()]||1;
-const risks={Burnout:risk(p.risk_tolerance*sm,(p.training+p.culture)/2,y,1.2,90,10),Financial:risk((p.debt/Math.max(1,p.revenue))*0.8+(10-p.cashflow)*0.5,(p.assets/1500)+Math.max(0,(p.revenue-p.expenses)/Math.max(1,p.revenue)*10),y,1.05,82,8),Cyber:risk(p.ai_usage*1.05,p.cybersec*1.1,y,1.3,88,12),Governance:risk(10-p.compliance,p.transparency,y,.85,74,8),Market:risk(10-p.adaptability,p.innovation*.95,y,.95,72,12),Dependency:risk(p.risk_tolerance,p.redundancy*1.2,y,.95,76,8),Operational:risk(10-p.compliance,p.redundancy,y,.75,65,7),"Knowledge loss":risk(10-p.training,p.culture*.8,y,.85,66,12),Automation:risk(p.ai_usage,p.compliance*1.05,y,1.1,80,12),Reputation:risk(10-p.transparency,p.culture*.9,y,.65,60,7)};
+const risks={Burnout:risk(p.risk_tolerance*sm,(p.training+p.culture)/2,y,1.2,90,10),Financial:financialRiskFromZ(altmanZScore(p)),Cyber:risk(p.ai_usage*1.05,p.cybersec*1.1,y,1.3,88,12),Governance:risk(10-p.compliance,p.transparency,y,.85,74,8),Market:risk(10-p.adaptability,p.innovation*.95,y,.95,72,12),Dependency:risk(p.risk_tolerance,p.redundancy*1.2,y,.95,76,8),Operational:risk(10-p.compliance,p.redundancy,y,.75,65,7),"Knowledge loss":risk(10-p.training,p.culture*.8,y,.85,66,12),Automation:risk(p.ai_usage,p.compliance*1.05,y,1.1,80,12),Reputation:risk(10-p.transparency,p.culture*.9,y,.65,60,7)};
 const stability=stab([p.culture,p.training,p.redundancy,p.compliance,p.cashflow],[p.risk_tolerance*sm,10-p.cybersec,10-p.adaptability]);
 return{risks,stability,yearly:mkY(stability,y)};
 }
@@ -175,7 +202,7 @@ const CSS=`@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;
 const STEPS=["Reading parameters","Simulating system","Calculating risks","Preparing analysis","Result ready"];
 const SRANGES=[[0,20],[20,50],[50,75],[75,95],[95,100]];
 const PLAN_CLS={free:["1","7","8","9"],pro:["1","4","7","8","9","10"]};
-const DAILY_LIMIT=3;
+const DAILY_LIMIT=1;
 
 export default function App(){
 const[page,setPage]=useState("home");
@@ -353,9 +380,11 @@ return (<div style={bg}><style>{CSS}</style><div style={grd}/>
    <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:10}}>
     <div><div style={{fontSize:10,color:G,marginBottom:2}}>Today</div><div style={{fontFamily:O,fontSize:16,color:B,fontWeight:700}}>€{result.wealth.start.toLocaleString()}</div></div>
     <div style={{fontSize:18,color:V}}>→</div>
-    <div style={{textAlign:Y}}><div style={{fontSize:10,color:G,marginBottom:2}}>In {result.years} years</div><div style={{fontFamily:O,fontSize:24,color:V,fontWeight:800}}>€{result.wealth.final.toLocaleString()}</div></div>
+    <div style={{textAlign:Y}}><div style={{fontSize:10,color:G,marginBottom:2}}>In {result.years} years (median)</div><div style={{fontFamily:O,fontSize:24,color:V,fontWeight:800}}>€{result.wealth.final.toLocaleString()}</div></div>
    </div>
-   <div style={{fontSize:12,color:B,lineHeight:1.6,marginBottom:8}}>{result.wealth.final>=result.wealth.start?"📈 +":"📉 −"}<span style={{color:result.wealth.final>=result.wealth.start?V:J,fontWeight:700}}>{Math.abs(Math.round((result.wealth.final-result.wealth.start)/Math.max(1,Math.abs(result.wealth.start))*100))}%</span> at {(result.wealth.rate*100).toFixed(1)}%/yr (stability-adjusted).</div>
+   {result.wealth.method==="monte-carlo"?
+   <div style={{fontSize:12,color:B,lineHeight:1.6,marginBottom:8}}>500-path Monte Carlo simulation, {(result.wealth.meanReturn*100).toFixed(1)}%/yr expected return based on historical market statistics. Range: <span style={{color:J}}>€{result.wealth.p10.toLocaleString()}</span> (weak decade) to <span style={{color:V}}>€{result.wealth.p90.toLocaleString()}</span> (strong decade).</div>
+   :<div style={{fontSize:12,color:B,lineHeight:1.6,marginBottom:8}}>{result.wealth.final>=result.wealth.start?"📈 +":"📉 −"}<span style={{color:result.wealth.final>=result.wealth.start?V:J,fontWeight:700}}>{Math.abs(Math.round((result.wealth.final-result.wealth.start)/Math.max(1,Math.abs(result.wealth.start))*100))}%</span> at {(result.wealth.rate*100).toFixed(1)}%/yr (stability-adjusted).</div>}
    <Chart yearly={result.wealth.pts.map(p=>({stability:p.value}))} color={V}/>
    <div style={{fontSize:10,color:G,lineHeight:1.5,marginTop:8,paddingTop:8,borderTop:"1px solid #1e2d40",textWrap:A}}>⚠ Illustrative projection — not financial advice. Actual returns depend on market conditions.</div>
   </div>}
@@ -386,6 +415,11 @@ return (<div style={bg}><style>{CSS}</style><div style={grd}/>
    {aiLoad?(<div style={{display:"flex",alignItems:E,gap:10,color:B,fontSize:13}}><div style={{width:14,height:14,border:"2px solid #00d4ff",borderTopColor:T,borderRadius:"50%",animation:"spin .7s linear infinite"}}></div>Generating report for {result.entity}...</div>):(<div><MD text={aiText} color={CLS[result.cls]?.color||D}/><button onClick={()=>{setAiLoad(true);setTimeout(()=>{setAiText(localAI(result));setAiLoad(false);},900);}} style={{marginTop:12,background:T,border:"1px solid #1e2d40",color:G,borderRadius:4,padding:"6px 14px",cursor:P,fontSize:11}}>↻ Regenerate</button></div>)}
   </div>
   <RiskIntelligencePanel currentResult={result} previousResult={history.find(h=>h.cls===result.cls&&h.id!==result.id)||null} historyForClass={history.filter(h=>h.cls===result.cls)} accentColor={CLS[result.cls]?.color}/>
+  {plan==="free"&&<div style={{...card(D+"40"),background:"linear-gradient(135deg,#0d1117,#0a1520)",marginBottom:12}}>
+   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><span style={{fontSize:18}}>💎</span><span style={{fontSize:13,fontWeight:800,color:D}}>Want to track how {result.worst} evolves?</span></div>
+   <div style={{fontSize:12,color:B,lineHeight:1.6,marginBottom:12}}>You get 1 free simulation per day — Pro removes that limit, unlocks all 6 domains (incl. Healthcare &amp; Retirement), and builds real trend history so Risk Evolution actually has something to compare against.</div>
+   <button onClick={()=>setPage("pricing")} style={{width:"100%",background:D,color:"#000",border:"none",borderRadius:4,padding:"11px",fontWeight:800,fontSize:13,cursor:P}}>💎 Go Pro from €8.99/mo →</button>
+  </div>}
   <button onClick={()=>{setPage("sim");setCls("");setResult(null);}} style={{width:"100%",background:T,border:"1px solid #1e2d40",color:B,borderRadius:4,padding:"12px",cursor:P,fontSize:13,marginTop:4}}>+ Run Another Simulation</button>
  </div>)}
 
@@ -405,13 +439,13 @@ return (<div style={bg}><style>{CSS}</style><div style={grd}/>
   <div style={{...card(),marginBottom:16}}><span style={lbl}>Class Access by Plan</span>
    {[{p:"Free",c:"🏢 Company · 🏠 Real Estate · 📈 Stocks/ETF · 🧍 Lifestyle",sub:"limited to "+DAILY_LIMIT+" sims/day total",col:G},{p:"Pro",c:"All 6 classes incl. 🏥 Healthcare & 🏦 Retirement",sub:"unlimited simulations & history",col:D}].map(r=>(<div key={r.p} style={{marginBottom:8}}><div style={{display:"flex",gap:8,alignItems:"baseline"}}><span style={{fontSize:11,fontWeight:800,color:r.col,minWidth:70}}>{r.p}</span><span style={{fontSize:12,color:"#c4cfdf"}}>{r.c}</span></div><div style={{fontSize:10,color:G,marginLeft:78}}>{r.sub}</div></div>))}
   </div>
-  {[{n:"Free",p:"€0",per:"Forever",col:G,ok:["Company simulation","5 preset profiles","Standard mode","Full strategic report","Risk distribution chart"],no:["All system classes","Wealth projections","Unlimited history"]},{n:"Pro",p:"€29.99",per:"/month",orig:"€89.99",sale:"67% OFF",col:D,feat:true,ok:["No usage limits","Early access to new system classes","All 6 system classes","Strategic analysis reports","Wealth projections","100 history slots","All profiles & styles"],no:[]}].map(pl=>(<div key={pl.n} style={{...card(pl.feat?pl.col+"50":undefined),boxShadow:pl.feat?"0 0 24px "+pl.col+"18":"none",marginBottom:12}}>{pl.feat&&<div style={{fontSize:10,color:pl.col,letterSpacing:2,fontFamily:O,marginBottom:8}}>★ MOST POPULAR</div>}<div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><div><div style={{fontSize:18,fontWeight:800}}>{pl.n}</div><div style={{fontSize:11,color:G}}>{pl.per}</div></div><div style={{textAlign:Y}}>{pl.sale&&<div style={{display:"flex",alignItems:E,gap:6,justifyContent:"flex-end",marginBottom:2}}><span style={{fontSize:12,color:G,textDecoration:"line-through"}}>{pl.orig}</span><span style={{fontSize:10,color:V,background:"rgba(0,255,157,0.12)",padding:"2px 6px",borderRadius:4,fontWeight:800}}>{pl.sale}</span></div>}<div style={{fontFamily:O,fontSize:28,color:pl.col,fontWeight:800}}>{pl.p}</div></div></div>{pl.ok.map(f=><div key={f} style={{fontSize:12,color:B,padding:"4px 0",borderBottom:"1px solid #0d1117",display:"flex",gap:8}}><span style={{color:V}}>✓</span>{f}</div>)}{pl.no.map(f=><div key={f} style={{fontSize:12,color:"#2d3748",padding:"4px 0",borderBottom:"1px solid #0d1117",display:"flex",gap:8}}><span>✗</span>{f}</div>)}<button onClick={()=>alert("Stripe integration coming soon. Plan: "+pl.n)} style={{width:"100%",marginTop:14,background:pl.feat?pl.col:T,color:pl.feat?"#000":pl.col,border:"1.5px solid "+pl.col,borderRadius:4,padding:"11px",fontWeight:700,fontSize:12,cursor:P}}>{pl.p==="€0"?"Get Started Free":"Subscribe €29.99/mo →"}</button></div>))}
+  {[{n:"Free",p:"€0",per:"Forever",col:G,ok:["Company simulation","5 preset profiles","Standard mode","Full strategic report","Risk distribution chart"],no:["All system classes","Wealth projections","Unlimited history"]},{n:"Pro",p:"€8.99",per:"/month",orig:"€29.99",sale:"70% OFF",col:D,feat:true,ok:["No usage limits","Early access to new system classes","All 6 system classes","Strategic analysis reports","Wealth projections","100 history slots","All profiles & styles"],no:[]}].map(pl=>(<div key={pl.n} style={{...card(pl.feat?pl.col+"50":undefined),boxShadow:pl.feat?"0 0 24px "+pl.col+"18":"none",marginBottom:12}}>{pl.feat&&<div style={{fontSize:10,color:pl.col,letterSpacing:2,fontFamily:O,marginBottom:8}}>★ MOST POPULAR</div>}<div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><div><div style={{fontSize:18,fontWeight:800}}>{pl.n}</div><div style={{fontSize:11,color:G}}>{pl.per}</div></div><div style={{textAlign:Y}}>{pl.sale&&<div style={{display:"flex",alignItems:E,gap:6,justifyContent:"flex-end",marginBottom:2}}><span style={{fontSize:12,color:G,textDecoration:"line-through"}}>{pl.orig}</span><span style={{fontSize:10,color:V,background:"rgba(0,255,157,0.12)",padding:"2px 6px",borderRadius:4,fontWeight:800}}>{pl.sale}</span></div>}<div style={{fontFamily:O,fontSize:28,color:pl.col,fontWeight:800}}>{pl.p}</div></div></div>{pl.ok.map(f=><div key={f} style={{fontSize:12,color:B,padding:"4px 0",borderBottom:"1px solid #0d1117",display:"flex",gap:8}}><span style={{color:V}}>✓</span>{f}</div>)}{pl.no.map(f=><div key={f} style={{fontSize:12,color:"#2d3748",padding:"4px 0",borderBottom:"1px solid #0d1117",display:"flex",gap:8}}><span>✗</span>{f}</div>)}<button onClick={()=>alert("Stripe integration coming soon. Plan: "+pl.n)} style={{width:"100%",marginTop:14,background:pl.feat?pl.col:T,color:pl.feat?"#000":pl.col,border:"1.5px solid "+pl.col,borderRadius:4,padding:"11px",fontWeight:700,fontSize:12,cursor:P}}>{pl.p==="€0"?"Get Started Free":"Subscribe €8.99/mo →"}</button></div>))}
   <div style={{...card(),marginBottom:12}}><span style={lbl}>💎 Annual Plan — Best Value</span>
    <div style={{display:"flex",justifyContent:"space-between",alignItems:E,marginBottom:10}}>
     <div><div style={{fontSize:16,fontWeight:800,color:D}}>Pro Yearly</div><div style={{fontSize:11,color:G}}>Everything in Pro · billed annually</div></div>
-    <div style={{textAlign:Y}}><div style={{fontSize:10,color:V,background:"rgba(0,255,157,0.12)",padding:"2px 8px",borderRadius:4,fontWeight:800,marginBottom:4,display:"inline-block"}}>save 72%</div><div style={{fontFamily:O,fontSize:24,color:D,fontWeight:800}}>€99.99<span style={{fontSize:12,color:G,fontWeight:400}}>/yr</span></div><div style={{fontSize:11,color:V}}>≈ €8.33/month — save 72%</div></div>
+    <div style={{textAlign:Y}}><div style={{fontSize:10,color:V,background:"rgba(0,255,157,0.12)",padding:"2px 8px",borderRadius:4,fontWeight:800,marginBottom:4,display:"inline-block"}}>save 44%</div><div style={{fontFamily:O,fontSize:24,color:D,fontWeight:800}}>€59.99<span style={{fontSize:12,color:G,fontWeight:400}}>/yr</span></div><div style={{fontSize:11,color:V}}>≈ €5.00/month — save 44%</div></div>
    </div>
-   <button onClick={()=>alert("Stripe integration coming soon. Plan: Pro Yearly")} style={{width:"100%",background:T,color:D,border:"1.5px solid #00d4ff",borderRadius:4,padding:"11px",fontWeight:700,fontSize:12,cursor:P}}>Subscribe €99.99/yr →</button>
+   <button onClick={()=>alert("Stripe integration coming soon. Plan: Pro Yearly")} style={{width:"100%",background:T,color:D,border:"1.5px solid #00d4ff",borderRadius:4,padding:"11px",fontWeight:700,fontSize:12,cursor:P}}>Subscribe €59.99/yr →</button>
   </div>
   <div style={{...card(),textAlign:E,border:"1px dashed #1e2d40"}}>
    <div style={{fontSize:11,color:B,fontWeight:800,letterSpacing:1,textTransform:U,marginBottom:6}}>🏢 Enterprise</div>
