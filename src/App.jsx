@@ -235,6 +235,7 @@ const[aiLoad,setAiLoad]=useState(false);
 const[plan,setPlan]=useState("free");
 const[usage,setUsage]=useState(()=>({date:new Date().toDateString(),count:0}));
 const[session,setSession]=useState(null);
+const[dbUsageToday,setDbUsageToday]=useState(0);
 const[authLoading,setAuthLoading]=useState(true);
 const[authMode,setAuthMode]=useState("signin");
 const[authEmail,setAuthEmail]=useState("");
@@ -245,7 +246,7 @@ const[authBusy,setAuthBusy]=useState(false);
 const cfg=cls?CLS[cls]:null;
 const limited=plan==="free";
 const today=new Date().toDateString();
-const usedToday=usage.date===today?usage.count:0;
+const usedToday=session?dbUsageToday:(usage.date===today?usage.count:0);
 const atLimit=limited&&usedToday>=DAILY_LIMIT;
 function trackUsage(){if(limited){setUsage(u=>({date:today,count:(u.date===today?u.count:0)+1}));}}
 
@@ -292,10 +293,21 @@ useEffect(()=>{
   });
 },[session]);
 
+useEffect(()=>{
+ if(!session){setDbUsageToday(0);return;}
+ const startOfDay=new Date();startOfDay.setHours(0,0,0,0);
+ supabase.from("simulations").select("id",{count:"exact",head:true}).eq("user_id",session.user.id).gte("created_at",startOfDay.toISOString())
+  .then(({count,error})=>{
+   if(error){console.error("Failed to load today's usage:",error);return;}
+   setDbUsageToday(count||0);
+  });
+},[session]);
+
 async function saveSimulationToDb(entry){
  if(!session)return;
  const{error}=await supabase.from("simulations").insert({user_id:session.user.id,cls:entry.cls,entity:entry.entity,years:entry.years,params:entry.params,result:entry});
- if(error)console.error("Failed to save simulation:",error);
+ if(error){console.error("Failed to save simulation:",error);return;}
+ setDbUsageToday(c=>c+1);
 }
 
 useEffect(()=>{
