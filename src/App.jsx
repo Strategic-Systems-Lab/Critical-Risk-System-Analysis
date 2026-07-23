@@ -275,14 +275,41 @@ async function handleAuthSubmit(e){
 }
 async function handleSignOut(){await supabase.auth.signOut();setPage("home");}
 
+const[stripeCustomerId,setStripeCustomerId]=useState(null);
+const[checkoutLoading,setCheckoutLoading]=useState(false);
+
 useEffect(()=>{
- if(!session){setPlan("free");return;}
- supabase.from("subscriptions").select("plan").eq("user_id",session.user.id).single()
+ if(!session){setPlan("free");setStripeCustomerId(null);return;}
+ supabase.from("subscriptions").select("plan,stripe_customer_id").eq("user_id",session.user.id).single()
   .then(({data,error})=>{
    if(error){console.error("Failed to load subscription:",error);setPlan("free");return;}
    setPlan(data?.plan||"free");
+   setStripeCustomerId(data?.stripe_customer_id||null);
   });
 },[session]);
+
+async function handleCheckout(billingCycle){
+ if(!session){setPage("auth");return;}
+ setCheckoutLoading(true);
+ try{
+  const res=await fetch("/api/create-checkout-session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({billingCycle,userId:session.user.id,userEmail:session.user.email})});
+  const data=await res.json();
+  if(data.url)window.location.href=data.url;
+  else alert(data.error||"Could not start checkout.");
+ }catch(err){alert("Could not start checkout. Please try again.");}
+ setCheckoutLoading(false);
+}
+async function handleManageSubscription(){
+ if(!stripeCustomerId)return;
+ setCheckoutLoading(true);
+ try{
+  const res=await fetch("/api/create-portal-session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({customerId:stripeCustomerId})});
+  const data=await res.json();
+  if(data.url)window.location.href=data.url;
+  else alert(data.error||"Could not open subscription management.");
+ }catch(err){alert("Could not open subscription management. Please try again.");}
+ setCheckoutLoading(false);
+}
 
 useEffect(()=>{
  if(!session)return;
@@ -369,7 +396,7 @@ if(loading){
 
 return (<div style={bg}><style>{CSS}</style><div style={grd}/>
  <div style={{position:"fixed",top:10,right:10,zIndex:200,fontSize:11}}>
-  {authLoading?null:session?(<div style={{display:"flex",alignItems:"center",gap:6,background:"rgba(13,17,23,0.9)",border:"1px solid #1e2d40",borderRadius:20,padding:"5px 10px"}}><span style={{color:G}}>{session.user.email.split("@")[0]}</span><button onClick={handleSignOut} style={{background:"none",border:"none",color:B,cursor:P,fontSize:11,padding:0}}>Sign out</button></div>):(<button onClick={()=>setPage("auth")} style={{background:"rgba(13,17,23,0.9)",border:"1px solid #1e2d40",color:D,borderRadius:20,padding:"5px 14px",cursor:P,fontSize:11,fontWeight:700}}>Sign In</button>)}
+  {authLoading?null:session?(<div style={{display:"flex",alignItems:"center",gap:6,background:"rgba(13,17,23,0.9)",border:"1px solid #1e2d40",borderRadius:20,padding:"5px 10px"}}><span style={{color:G}}>{session.user.email.split("@")[0]}</span>{plan==="pro"&&stripeCustomerId&&<button onClick={handleManageSubscription} style={{background:"none",border:"none",color:D,cursor:P,fontSize:11,padding:0}}>Manage</button>}<button onClick={handleSignOut} style={{background:"none",border:"none",color:B,cursor:P,fontSize:11,padding:0}}>Sign out</button></div>):(<button onClick={()=>setPage("auth")} style={{background:"rgba(13,17,23,0.9)",border:"1px solid #1e2d40",color:D,borderRadius:20,padding:"5px 14px",cursor:P,fontSize:11,fontWeight:700}}>Sign In</button>)}
  </div>
 
  {page==="home"&&(<div className="F" style={{...sc,paddingTop:0}}>
@@ -540,13 +567,13 @@ return (<div style={bg}><style>{CSS}</style><div style={grd}/>
   <div style={{...card(),marginBottom:16}}><span style={lbl}>Class Access by Plan</span>
    {[{p:"Free",c:"🏢 Company · 🏠 Real Estate · 📈 Stocks/ETF · 🧍 Lifestyle",sub:"limited to "+DAILY_LIMIT+" sims/day total",col:G},{p:"Pro",c:"All 6 classes incl. 🏥 Healthcare & 🏦 Retirement",sub:"unlimited simulations & history",col:D}].map(r=>(<div key={r.p} style={{marginBottom:8}}><div style={{display:"flex",gap:8,alignItems:"baseline"}}><span style={{fontSize:11,fontWeight:800,color:r.col,minWidth:70}}>{r.p}</span><span style={{fontSize:12,color:"#c4cfdf"}}>{r.c}</span></div><div style={{fontSize:10,color:G,marginLeft:78}}>{r.sub}</div></div>))}
   </div>
-  {[{n:"Free",p:"€0",per:"Forever",col:G,ok:["Company simulation","5 preset profiles","Standard mode","Full strategic report","Risk distribution chart"],no:["All system classes","Wealth projections","Unlimited history"]},{n:"Pro",p:"€8.99",per:"/month",orig:"€29.99",sale:"70% OFF",col:D,feat:true,ok:["No usage limits","Early access to new system classes","All 6 system classes","Strategic analysis reports","Wealth projections","100 history slots","All profiles & styles"],no:[]}].map(pl=>(<div key={pl.n} style={{...card(pl.feat?pl.col+"50":undefined),boxShadow:pl.feat?"0 0 24px "+pl.col+"18":"none",marginBottom:12}}>{pl.feat&&<div style={{fontSize:10,color:pl.col,letterSpacing:2,fontFamily:O,marginBottom:8}}>★ MOST POPULAR</div>}<div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><div><div style={{fontSize:18,fontWeight:800}}>{pl.n}</div><div style={{fontSize:11,color:G}}>{pl.per}</div></div><div style={{textAlign:Y}}>{pl.sale&&<div style={{display:"flex",alignItems:E,gap:6,justifyContent:"flex-end",marginBottom:2}}><span style={{fontSize:12,color:G,textDecoration:"line-through"}}>{pl.orig}</span><span style={{fontSize:10,color:V,background:"rgba(0,255,157,0.12)",padding:"2px 6px",borderRadius:4,fontWeight:800}}>{pl.sale}</span></div>}<div style={{fontFamily:O,fontSize:28,color:pl.col,fontWeight:800}}>{pl.p}</div></div></div>{pl.ok.map(f=><div key={f} style={{fontSize:12,color:B,padding:"4px 0",borderBottom:"1px solid #0d1117",display:"flex",gap:8}}><span style={{color:V}}>✓</span>{f}</div>)}{pl.no.map(f=><div key={f} style={{fontSize:12,color:"#2d3748",padding:"4px 0",borderBottom:"1px solid #0d1117",display:"flex",gap:8}}><span>✗</span>{f}</div>)}<button onClick={()=>alert("Stripe integration coming soon. Plan: "+pl.n)} style={{width:"100%",marginTop:14,background:pl.feat?pl.col:T,color:pl.feat?"#000":pl.col,border:"1.5px solid "+pl.col,borderRadius:4,padding:"11px",fontWeight:700,fontSize:12,cursor:P}}>{pl.p==="€0"?"Get Started Free":"Subscribe €8.99/mo →"}</button></div>))}
+  {[{n:"Free",p:"€0",per:"Forever",col:G,ok:["Company simulation","5 preset profiles","Standard mode","Full strategic report","Risk distribution chart"],no:["All system classes","Wealth projections","Unlimited history"]},{n:"Pro",p:"€8.99",per:"/month",orig:"€29.99",sale:"70% OFF",col:D,feat:true,ok:["No usage limits","Early access to new system classes","All 6 system classes","Strategic analysis reports","Wealth projections","100 history slots","All profiles & styles"],no:[]}].map(pl=>(<div key={pl.n} style={{...card(pl.feat?pl.col+"50":undefined),boxShadow:pl.feat?"0 0 24px "+pl.col+"18":"none",marginBottom:12}}>{pl.feat&&<div style={{fontSize:10,color:pl.col,letterSpacing:2,fontFamily:O,marginBottom:8}}>★ MOST POPULAR</div>}<div style={{display:"flex",justifyContent:"space-between",marginBottom:14}}><div><div style={{fontSize:18,fontWeight:800}}>{pl.n}</div><div style={{fontSize:11,color:G}}>{pl.per}</div></div><div style={{textAlign:Y}}>{pl.sale&&<div style={{display:"flex",alignItems:E,gap:6,justifyContent:"flex-end",marginBottom:2}}><span style={{fontSize:12,color:G,textDecoration:"line-through"}}>{pl.orig}</span><span style={{fontSize:10,color:V,background:"rgba(0,255,157,0.12)",padding:"2px 6px",borderRadius:4,fontWeight:800}}>{pl.sale}</span></div>}<div style={{fontFamily:O,fontSize:28,color:pl.col,fontWeight:800}}>{pl.p}</div></div></div>{pl.ok.map(f=><div key={f} style={{fontSize:12,color:B,padding:"4px 0",borderBottom:"1px solid #0d1117",display:"flex",gap:8}}><span style={{color:V}}>✓</span>{f}</div>)}{pl.no.map(f=><div key={f} style={{fontSize:12,color:"#2d3748",padding:"4px 0",borderBottom:"1px solid #0d1117",display:"flex",gap:8}}><span>✗</span>{f}</div>)}<button onClick={()=>pl.p==="€0"?null:handleCheckout("monthly")} disabled={checkoutLoading} style={{width:"100%",marginTop:14,background:pl.feat?pl.col:T,color:pl.feat?"#000":pl.col,border:"1.5px solid "+pl.col,borderRadius:4,padding:"11px",fontWeight:700,fontSize:12,cursor:P,opacity:checkoutLoading?.6:1}}>{pl.p==="€0"?"Get Started Free":checkoutLoading?"Please wait…":"Subscribe €8.99/mo →"}</button></div>))}
   <div style={{...card(),marginBottom:12}}><span style={lbl}>💎 Annual Plan — Best Value</span>
    <div style={{display:"flex",justifyContent:"space-between",alignItems:E,marginBottom:10}}>
     <div><div style={{fontSize:16,fontWeight:800,color:D}}>Pro Yearly</div><div style={{fontSize:11,color:G}}>Everything in Pro · billed annually</div></div>
     <div style={{textAlign:Y}}><div style={{fontSize:10,color:V,background:"rgba(0,255,157,0.12)",padding:"2px 8px",borderRadius:4,fontWeight:800,marginBottom:4,display:"inline-block"}}>save 44%</div><div style={{fontFamily:O,fontSize:24,color:D,fontWeight:800}}>€59.99<span style={{fontSize:12,color:G,fontWeight:400}}>/yr</span></div><div style={{fontSize:11,color:V}}>≈ €5.00/month — save 44%</div></div>
    </div>
-   <button onClick={()=>alert("Stripe integration coming soon. Plan: Pro Yearly")} style={{width:"100%",background:T,color:D,border:"1.5px solid #00d4ff",borderRadius:4,padding:"11px",fontWeight:700,fontSize:12,cursor:P}}>Subscribe €59.99/yr →</button>
+   <button onClick={()=>handleCheckout("yearly")} disabled={checkoutLoading} style={{width:"100%",background:T,color:D,border:"1.5px solid #00d4ff",borderRadius:4,padding:"11px",fontWeight:700,fontSize:12,cursor:P,opacity:checkoutLoading?.6:1}}>{checkoutLoading?"Please wait…":"Subscribe €59.99/yr →"}</button>
   </div>
   <div style={{...card(),textAlign:E,border:"1px dashed #1e2d40"}}>
    <div style={{fontSize:11,color:B,fontWeight:800,letterSpacing:1,textTransform:U,marginBottom:6}}>🏢 Enterprise</div>
